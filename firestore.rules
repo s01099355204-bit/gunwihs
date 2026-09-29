@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 학생 정보: 본인만 읽고 쓸 수 있음 (전화번호는 다른 사람에게 절대 안 보임)
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /surveys/{surveyId} {
+      // 로그인한 학생은 누구나 설문 목록을 볼 수 있음
+      allow read: if request.auth != null;
+
+      // 설문 만들기: 본인 이름으로만, 제목 100자·질문 30개 이하
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 100
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() > 0
+        && request.resource.data.questions.size() <= 30;
+
+      // 삭제: 만든 사람만
+      allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+
+      // 응답: 한 사람당 한 번만 (문서 이름 = 내 uid, 수정 불가)
+      match /responses/{uid} {
+        allow create: if request.auth != null && request.auth.uid == uid;
+        allow read: if request.auth != null && (
+          request.auth.uid == uid ||
+          get(/databases/$(database)/documents/surveys/$(surveyId)).data.ownerUid == request.auth.uid
+        );
+      }
+    }
+  }
+}

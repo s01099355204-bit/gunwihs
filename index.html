@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="학교 설문">
+<title>GH 학교 설문조사</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --blue: #1a73e8;
+    --blue-soft: #e8f0fe;
+    --ink: #191f28;
+    --sub: #6b7684;
+    --line: #e5e8eb;
+    --bg: #f2f4f6;
+    --card: #ffffff;
+    --red: #e5484d;
+    --green: #12a150;
+    --radius: 16px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* 상단바 */
+  .top {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-in { max-width: 720px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; margin-right: auto; }
+  .brand b { background: var(--blue); color: #fff; border-radius: 8px; padding: 2px 7px; font-size: 14px; }
+  .pill {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 6px 12px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .pill.blue { color: var(--blue); border-color: #c6dafc; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 120px; }
+  h1 { font-size: 26px; line-height: 1.3; margin: 8px 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 19px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--sub); margin: 0 0 20px; }
+
+  /* 공통 부품 */
+  .box { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; }
+  .field { display: block; margin-bottom: 14px; }
+  .field > span { display: block; font-size: 14px; font-weight: 600; color: var(--sub); margin-bottom: 6px; }
+  .input, .field input, .field select, .field textarea {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 12px; background: #fff;
+    padding: 13px 14px; font-size: 16px; outline: none;
+  }
+  .input:focus, .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+  textarea { resize: vertical; min-height: 90px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: 12px; padding: 14px 18px; font-weight: 700; font-size: 16px; cursor: pointer;
+  }
+  .btn.full { width: 100%; }
+  .btn.primary { background: var(--blue); color: #fff; }
+  .btn.primary:disabled { background: #a8c7fa; cursor: default; }
+  .btn.soft { background: var(--blue-soft); color: var(--blue); }
+  .btn.ghost { background: transparent; color: var(--sub); }
+  .btn.danger { background: #fdecec; color: var(--red); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row > .btn { flex: 1; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; margin: 4px 0 16px; cursor: pointer; }
+  .check input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--blue); flex: none; }
+
+  /* 버튼형 선택 (학년·성별 등) */
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
+  .seg label { flex: 1; min-width: 64px; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span {
+    display: block; text-align: center; padding: 12px 8px; border-radius: 12px;
+    border: 1.5px solid var(--line); background: #fff; font-weight: 600;
+  }
+  .seg input:checked + span { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+  .seg input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  /* 로그인 */
+  .auth { max-width: 420px; margin: 24px auto 0; }
+  .auth h1 { font-size: 28px; }
+  .demo {
+    margin-top: 18px; padding: 12px 14px; border-radius: 12px; background: #fff8e1;
+    color: #8a6100; font-size: 14px;
+  }
+
+  /* 목록 */
+  .tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--line); margin: 12px 0 14px; }
+  .tabs button {
+    background: none; border: 0; padding: 10px 0; font-weight: 700; color: var(--sub); cursor: pointer;
+    border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+  }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-color: var(--ink); }
+  .chips { display: flex; gap: 6px; margin: 10px 0 16px; overflow-x: auto; }
+  .chips button {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 14px;
+    font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .chips button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .cards { display: grid; gap: 10px; }
+  .card { display: flex; gap: 14px; background: var(--card); border-radius: var(--radius); padding: 16px; }
+  .card:active { transform: scale(.99); }
+  .dday {
+    flex: none; width: 58px; height: 58px; border-radius: 14px; background: var(--blue-soft); color: var(--blue);
+    display: grid; place-items: center; font-weight: 800; font-size: 15px; text-align: center; line-height: 1.1;
+  }
+  .dday.urgent { background: #fdecec; color: var(--red); }
+  .dday.closed { background: var(--bg); color: var(--sub); }
+  .card-body { min-width: 0; flex: 1; }
+  .card h3 { margin: 0 0 2px; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card p { margin: 0; color: var(--sub); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .tag { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: var(--bg); color: var(--sub); }
+  .tag.blue { background: var(--blue-soft); color: var(--blue); }
+  .empty { text-align: center; color: var(--sub); padding: 48px 16px; }
+  .empty b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+  .fab {
+    position: fixed; right: max(16px, calc(50% - 344px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    background: var(--blue); color: #fff; font-weight: 700; border-radius: 999px; padding: 15px 22px;
+    box-shadow: 0 6px 20px rgba(26,115,232,.35); z-index: 5;
+  }
+
+  /* 설문 참여 */
+  .back { display: inline-block; color: var(--sub); font-weight: 600; margin-bottom: 8px; }
+  .q { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 10px; }
+  .q-title { font-weight: 700; margin-bottom: 12px; font-size: 17px; }
+  .q-title .num { color: var(--blue); margin-right: 6px; }
+  .q-title .req { color: var(--red); margin-left: 4px; }
+  .opt { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; margin-bottom: 8px; cursor: pointer; }
+  .opt input { width: 20px; height: 20px; margin: 0; accent-color: var(--blue); flex: none; }
+  .opt:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
+  .scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .scale-ends { display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); margin-top: 6px; }
+  .notice { background: var(--card); border-radius: var(--radius); padding: 28px 20px; text-align: center; margin-bottom: 12px; }
+  .notice b { display: block; font-size: 18px; margin-bottom: 4px; }
+  .notice p { margin: 0; color: var(--sub); }
+
+  /* 설문 만들기 */
+  .qe { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; border-left: 4px solid var(--blue); }
+  .qe-head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .qe-head strong { margin-right: auto; color: var(--blue); }
+  .qe-head select { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; }
+  .icon-btn { border: 0; background: var(--bg); border-radius: 10px; padding: 8px 10px; cursor: pointer; font-size: 14px; color: var(--sub); }
+  .opt-edit { display: flex; gap: 6px; margin-bottom: 6px; }
+  .opt-edit .input { padding: 10px 12px; }
+  .add-opt { background: none; border: 1.5px dashed var(--line); border-radius: 12px; padding: 10px; width: 100%; color: var(--sub); cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+  .add-q { width: 100%; border: 2px dashed #c6dafc; background: #fff; color: var(--blue); border-radius: var(--radius); padding: 16px; font-weight: 700; cursor: pointer; margin-bottom: 16px; }
+
+  /* 결과 */
+  .big-num { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .bar-row { margin-bottom: 10px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 4px; gap: 8px; }
+  .bar-label span:last-child { color: var(--sub); white-space: nowrap; }
+  .bar { height: 10px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--blue); border-radius: 99px; }
+  .answers { max-height: 320px; overflow: auto; display: grid; gap: 6px; }
+  .answers div { background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+
+  /* 팝업·알림 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal-box {
+    background: #fff; width: 100%; max-width: 440px; margin: 12px; border-radius: 20px; padding: 24px;
+    margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); text-align: center;
+  }
+  @media (min-width: 600px) { .modal { align-items: center; } }
+  #qrBox { display: flex; justify-content: center; margin: 16px 0; }
+  #qrBox img, #qrBox canvas { max-width: 100%; }
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 15px; z-index: 60;
+    max-width: calc(100% - 32px); text-align: center;
+  }
+  .loading { text-align: center; color: var(--sub); padding: 40px 0; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#/"><b>GH</b> 학교 설문</a>
+    <button id="installBtn" class="pill blue" hidden>⬇ 앱 설치</button>
+    <a id="meBtn" class="pill" href="#/me" hidden></a>
+  </div>
+</header>
+<main id="app"><div class="loading">불러오는 중…</div></main>
+<div id="recaptcha"></div>
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script type="module">
+/* =================================================================
+   ① 파이어베이스 설정 — 설정 가이드(README) 3단계에서 복사한 값을 붙여넣으세요.
+   비워두면 "체험 모드"로 동작해요 (인증번호 123456, 내 기기에만 저장).
+================================================================= */
+const firebaseConfig = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+
+const DEMO = !firebaseConfig.apiKey;
+const FB = 'https://www.gstatic.com/firebasejs/10.12.2';
+const MAX_CLASS = 12;              // 반 개수 (학교에 맞게 바꾸세요)
+
+/* ---------------- 공통 도구 ---------------- */
+const $ = (s, el = document) => el.querySelector(s);
+const app = $('#app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let toastTimer;
+function toast(msg, ms = 2500) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), ms);
+}
+const gradeLabel = (g) => (g ? `${g}학년` : '전체 학년');
+const genderLabel = (g) => ({ M: '남', F: '여' }[g] || '');
+const TYPES = { single: '객관식 (하나 선택)', multi: '체크박스 (여러 개)', short: '단답형', long: '서술형', scale: '점수 (1~5)' };
+const hasOptions = (t) => t === 'single' || t === 'multi';
+
+function todayStr() {
+  const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function ddayInfo(deadline) {
+  if (!deadline) return { text: '상시', cls: '', closed: false };
+  const diff = Math.round((new Date(deadline + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 86400000);
+  if (diff < 0) return { text: '마감', cls: 'closed', closed: true };
+  if (diff === 0) return { text: 'D-day', cls: 'urgent', closed: false };
+  return { text: `D-${diff}`, cls: diff <= 2 ? 'urgent' : '', closed: false };
+}
+function formatPhone(v) {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length < 4) return d;
+  if (d.length < 8) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
+}
+const validPhone = (v) => /^01[016789]\d{7,8}$/.test(v.replace(/\D/g, ''));
+const toE164 = (v) => '+82' + v.replace(/\D/g, '').slice(1);
+
+function authError(e) {
+  const map = {
+    'auth/invalid-verification-code': '인증번호가 맞지 않아요. 다시 확인해주세요.',
+    'auth/code-expired': '인증번호 시간이 지났어요. 다시 받아주세요.',
+    'auth/too-many-requests': '요청이 너무 많아요. 잠시 후 다시 시도해주세요.',
+    'auth/invalid-phone-number': '전화번호 형식이 올바르지 않아요.',
+    'auth/quota-exceeded': '오늘 보낼 수 있는 문자 수를 넘었어요.',
+    'auth/billing-not-enabled': '문자 발송 설정(Blaze 요금제)이 필요해요. 관리자에게 알려주세요.',
+    'auth/unauthorized-domain': '이 주소가 파이어베이스 승인 도메인에 없어요.',
+    'bad-code': '인증번호가 맞지 않아요. 다시 확인해주세요.'
+  };
+  return map[e?.code || e?.message] || '문제가 생겼어요. 잠시 후 다시 시도해주세요.';
+}
+
+/* =================================================================
+   ② 데이터 저장소 — 체험 모드(내 기기) / 파이어베이스(실제 서버)
+================================================================= */
+function demoApi() {
+  const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  let pending = null, listener = null;
+  return {
+    onAuth(cb) { listener = cb; cb(load('demo:session', null)); },
+    async sendCode(phone) { pending = phone; toast('체험 모드: 인증번호는 123456 이에요', 5000); },
+    async verifyCode(code) {
+      if (code !== '123456') throw new Error('bad-code');
+      const u = { uid: 'demo_' + pending.replace(/\D/g, ''), phone: toE164(pending) };
+      save('demo:session', u); listener?.(u); return u;
+    },
+    async logout() { try { localStorage.removeItem('demo:session'); } catch {} listener?.(null); },
+    async getProfile(uid) { return load('demo:users', {})[uid] || null; },
+    async saveProfile(uid, p) { const all = load('demo:users', {}); all[uid] = { ...all[uid], ...p }; save('demo:users', all); },
+    async listSurveys() { return Object.values(load('demo:surveys', {})).sort((a, b) => b.createdAt - a.createdAt); },
+    async getSurvey(id) { return load('demo:surveys', {})[id] || null; },
+    async createSurvey(d) {
+      const all = load('demo:surveys', {}); const id = 's' + Date.now().toString(36);
+      all[id] = { ...d, id, createdAt: Date.now() }; save('demo:surveys', all); return id;
+    },
+    async deleteSurvey(id) {
+      const all = load('demo:surveys', {}); delete all[id]; save('demo:surveys', all);
+      const r = load('demo:responses', {}); delete r[id]; save('demo:responses', r);
+    },
+    async getMyResponse(id, uid) { return load('demo:responses', {})[id]?.[uid] || null; },
+    async submitResponse(id, uid, d) {
+      const r = load('demo:responses', {}); r[id] = r[id] || {};
+      if (r[id][uid]) throw new Error('already');
+      r[id][uid] = { ...d, createdAt: Date.now() }; save('demo:responses', r);
+    },
+    async listResponses(id) { return Object.values(load('demo:responses', {})[id] || {}); }
+  };
+}
+
+async function firebaseApi() {
+  const [{ initializeApp }, A, F] = await Promise.all([
+    import(`${FB}/firebase-app.js`), import(`${FB}/firebase-auth.js`), import(`${FB}/firebase-firestore.js`)
+  ]);
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = A.getAuth(fbApp); auth.languageCode = 'ko';
+  const db = F.getFirestore(fbApp);
+  let confirmation = null, verifier = null;
+  const toUser = (u) => (u ? { uid: u.uid, phone: u.phoneNumber } : null);
+  const ms = (v) => (v?.toMillis ? v.toMillis() : v || 0);
+  const withId = (d) => ({ ...d.data(), id: d.id, createdAt: ms(d.data().createdAt) });
+  return {
+    onAuth(cb) { A.onAuthStateChanged(auth, (u) => cb(toUser(u))); },
+    async sendCode(phone) {
+      if (!verifier) verifier = new A.RecaptchaVerifier(auth, 'recaptcha', { size: 'invisible' });
+      try { confirmation = await A.signInWithPhoneNumber(auth, toE164(phone), verifier); }
+      catch (e) { verifier.clear(); verifier = null; throw e; }
+    },
+    async verifyCode(code) { const r = await confirmation.confirm(code); return toUser(r.user); },
+    logout: () => A.signOut(auth),
+    async getProfile(uid) { const s = await F.getDoc(F.doc(db, 'users', uid)); return s.exists() ? s.data() : null; },
+    saveProfile: (uid, p) => F.setDoc(F.doc(db, 'users', uid), { ...p, updatedAt: F.serverTimestamp() }, { merge: true }),
+    async listSurveys() {
+      const s = await F.getDocs(F.query(F.collection(db, 'surveys'), F.orderBy('createdAt', 'desc'), F.limit(200)));
+      return s.docs.map(withId);
+    },
+    async getSurvey(id) { const s = await F.getDoc(F.doc(db, 'surveys', id)); return s.exists() ? withId(s) : null; },
+    async createSurvey(d) { const r = await F.addDoc(F.collection(db, 'surveys'), { ...d, createdAt: F.serverTimestamp() }); return r.id; },
+    deleteSurvey: (id) => F.deleteDoc(F.doc(db, 'surveys', id)),
+    async getMyResponse(id, uid) { const s = await F.getDoc(F.doc(db, 'surveys', id, 'responses', uid)); return s.exists() ? s.data() : null; },
+    submitResponse: (id, uid, d) => F.setDoc(F.doc(db, 'surveys', id, 'responses', uid), { ...d, createdAt: F.serverTimestamp() }),
+    async listResponses(id) { const s = await F.getDocs(F.collection(db, 'surveys', id, 'responses')); return s.docs.map((d) => d.data()); }
+  };
+}
+
+/* =================================================================
+   ③ 화면
+================================================================= */
+const S = { user: null, profile: null, filter: { q: '', grade: 0, tab: 'all' } };
+let api;
+
+function updateHeader() {
+  const me = $('#meBtn');
+  if (S.user && S.profile?.grade) {
+    me.hidden = false;
+    me.textContent = `${S.profile.grade}학년 ${S.profile.classNo}반`;
+  } else me.hidden = true;
+}
+
+function route() {
+  const [a, b, c] = location.hash.replace(/^#\/?/, '').split('/');
+  window.scrollTo(0, 0);
+  if (a === 'new') return renderBuilder();
+  if (a === 'me') return renderProfile(false);
+  if (a === 's' && b && c === 'results') return renderResults(b);
+  if (a === 's' && b) return renderSurvey(b);
+  renderList();
+}
+
+/* ---------- 로그인 (전화번호 + 인증번호) ---------- */
+function renderLogin() {
+  app.innerHTML = `
+  <section class="auth">
+    <h1>전화번호로 시작하기</h1>
+    <p class="sub">문자로 받은 인증번호로 본인 확인을 해요. 전화번호는 다른 학생에게 보이지 않아요.</p>
+    <label class="field"><span>전화번호</span>
+      <input id="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-1234-5678" maxlength="13"></label>
+    <label class="check"><input type="checkbox" id="agree">
+      <span>개인정보(전화번호, 학년·반·성별) 수집과 이용에 동의해요. 설문 참여와 본인 확인에만 쓰여요.</span></label>
+    <button class="btn primary full" id="sendBtn">인증번호 받기</button>
+    <div id="codeArea" hidden style="margin-top:20px">
+      <label class="field"><span>인증번호 6자리</span>
+        <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>
+      <button class="btn primary full" id="verifyBtn">확인</button>
+      <button class="btn ghost full" id="resendBtn">인증번호 다시 받기</button>
+    </div>
+    ${DEMO ? `<div class="demo">지금은 체험 모드예요. 아무 번호나 넣고 인증번호 <b>123456</b>을 입력하면 돼요. 데이터는 이 기기에만 저장돼요.</div>` : ''}
+  </section>`;
+  const phone = $('#phone'), sendBtn = $('#sendBtn');
+  phone.addEventListener('input', () => (phone.value = formatPhone(phone.value)));
+  async function send() {
+    if (!validPhone(phone.value)) return toast('전화번호를 정확히 입력해주세요.');
+    if (!$('#agree').checked) return toast('개인정보 수집에 동의해주세요.');
+    sendBtn.disabled = true; sendBtn.textContent = '보내는 중…';
+    try {
+      await api.sendCode(phone.value);
+      $('#codeArea').hidden = false; $('#code').focus();
+      sendBtn.textContent = '문자를 보냈어요';
+      if (!DEMO) toast('인증번호를 문자로 보냈어요.');
+    } catch (e) { console.error(e); toast(authError(e), 4000); sendBtn.disabled = false; sendBtn.textContent = '인증번호 받기'; }
+  }
+  sendBtn.onclick = send;
+  $('#resendBtn').onclick = send;
+  $('#verifyBtn').onclick = async () => {
+    const code = $('#code').value.trim();
+    if (code.length !== 6) return toast('인증번호 6자리를 입력해주세요.');
+    $('#verifyBtn').disabled = true;
+    try { await api.verifyCode(code); }
+    catch (e) { toast(authError(e)); $('#verifyBtn').disabled = false; }
+  };
+}
+
+/* ---------- 학년·반·성별 저장 ---------- */
+function renderProfile(first) {
+  const p = S.profile || {};
+  const classOpts = Array.from({ length: MAX_CLASS }, (_, i) => i + 1)
+    .map((n) => `<option value="${n}" ${p.classNo == n ? 'selected' : ''}>${n}반</option>`).join('');
+  app.innerHTML = `
+  <section class="auth">
+    ${first ? '' : '<a class="back" href="#/">← 목록으로</a>'}
+    <h1>${first ? '내 정보를 알려주세요' : '내 정보'}</h1>
+    <p class="sub">${first ? '학년에 맞는 설문을 보여주고, 결과 통계에 쓰여요.' : esc(p.phone ? formatPhone('0' + p.phone.replace('+82', '')) : '')}</p>
+    <div class="field"><span>학년</span><div class="seg">
+      ${[1, 2, 3].map((g) => `<label><input type="radio" name="grade" value="${g}" ${p.grade == g ? 'checked' : ''}><span>${g}학년</span></label>`).join('')}
+    </div></div>
+    <label class="field"><span>반</span><select id="classNo"><option value="">선택하세요</option>${classOpts}</select></label>
+    <div class="field"><span>성별</span><div class="seg">
+      <label><input type="radio" name="gender" value="M" ${p.gender === 'M' ? 'checked' : ''}><span>남</span></label>
+      <label><input type="radio" name="gender" value="F" ${p.gender === 'F' ? 'checked' : ''}><span>여</span></label>
+    </div></div>
+    <button class="btn primary full" id="saveBtn">${first ? '시작하기' : '저장하기'}</button>
+    ${first ? '' : '<button class="btn ghost full" id="logoutBtn" style="margin-top:8px">로그아웃</button>'}
+  </section>`;
+  $('#saveBtn').onclick = async () => {
+    const grade = Number(document.querySelector('input[name=grade]:checked')?.value);
+    const classNo = Number($('#classNo').value);
+    const gender = document.querySelector('input[name=gender]:checked')?.value;
+    if (!grade || !classNo || !gender) return toast('학년, 반, 성별을 모두 선택해주세요.');
+    const data = { grade, classNo, gender, phone: S.user.phone };
+    try {
+      await api.saveProfile(S.user.uid, data);
+      S.profile = { ...S.profile, ...data }; updateHeader();
+      toast('저장했어요.');
+      if (first) route(); else location.hash = '#/';
+    } catch (e) { console.error(e); toast('저장하지 못했어요. 다시 시도해주세요.'); }
+  };
+  if (!first) $('#logoutBtn').onclick = () => { if (confirm('로그아웃할까요?')) api.logout(); };
+}
+
+/* ---------- 설문 목록 ---------- */
+async function renderList() {
+  const f = S.filter;
+  app.innerHTML = `
+    <h1>설문 목록</h1>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="all" aria-selected="${f.tab === 'all'}">전체 설문</button>
+      <button role="tab" data-tab="mine" aria-selected="${f.tab === 'mine'}">내가 만든 설문</button>
+    </div>
+    <input id="q" class="input" type="search" placeholder="설문 제목으로 검색" value="${esc(f.q)}">
+    <div class="chips">
+      ${[0, 1, 2, 3].map((g) => `<button data-grade="${g}" aria-pressed="${f.grade === g}">${g ? g + '학년' : '전체'}</button>`).join('')}
+    </div>
+    <div id="cards" class="cards"><div class="loading">불러오는 중…</div></div>
+    <a class="fab" href="#/new">＋ 설문 만들기</a>`;
+  let surveys = [];
+  const draw = () => {
+    const q = f.q.trim().toLowerCase();
+    const list = surveys.filter((s) =>
+      (f.tab === 'mine' ? s.ownerUid === S.user.uid : true) &&
+      (!f.grade || s.grade === 0 || s.grade === f.grade) &&
+      (!q || s.title.toLowerCase().includes(q)));
+    $('#cards').innerHTML = list.length ? list.map(cardHtml).join('') :
+      `<div class="empty"><b>${f.tab === 'mine' ? '아직 만든 설문이 없어요' : '설문이 없어요'}</b>
+       ${f.tab === 'mine' ? '아래 버튼으로 첫 설문을 만들어보세요.' : '다른 검색어나 학년을 선택해보세요.'}</div>`;
+  };
+  app.querySelector('.tabs').onclick = (e) => {
+    const t = e.target.closest('[data-tab]'); if (!t) return;
+    f.tab = t.dataset.tab;
+    app.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', b === t));
+    draw();
+  };
+  app.querySelector('.chips').onclick = (e) => {
+    const b = e.target.closest('[data-grade]'); if (!b) return;
+    f.grade = Number(b.dataset.grade);
+    app.querySelectorAll('.chips button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    draw();
+  };
+  $('#q').oninput = (e) => { f.q = e.target.value; draw(); };
+  try { surveys = await api.listSurveys(); draw(); }
+  catch (e) { console.error(e); $('#cards').innerHTML = `<div class="empty"><b>목록을 불러오지 못했어요</b>인터넷 연결을 확인하고 새로고침해주세요.</div>`; }
+}
+function cardHtml(s) {
+  const d = ddayInfo(s.deadline);
+  return `<a class="card" href="#/s/${esc(s.id)}">
+    <div class="dday ${d.cls}">${d.text}</div>
+    <div class="card-body">
+      <h3>${esc(s.title)}</h3>
+      ${s.desc ? `<p>${esc(s.desc)}</p>` : ''}
+      <div class="meta">
+        <span class="tag blue">${gradeLabel(s.grade)}</span>
+        <span class="tag">질문 ${s.questions.length}개</span>
+        ${s.ownerUid === S.user.uid ? '<span class="tag">내 설문</span>' : ''}
+      </div>
+    </div></a>`;
+}
+
+/* ---------- 설문 참여 ---------- */
+async function renderSurvey(id) {
+  app.innerHTML = '<div class="loading">불러오는 중…</div>';
+  let s, mine;
+  try { [s, mine] = await Promise.all([api.getSurvey(id), api.getMyResponse(id, S.user.uid)]); }
+  catch (e) { console.error(e); app.innerHTML = '<div class="empty"><b>설문을 불러오지 못했어요</b><a href="#/">목록으로 돌아가기</a></div>'; return; }
+  if (!s) { app.innerHTML = '<div class="empty"><b>삭제되었거나 없는 설문이에요</b><a href="#/">목록으로 돌아가기</a></div>'; return; }
+
+  const d = ddayInfo(s.deadline);
+  const isOwner = s.ownerUid === S.user.uid;
+  const wrongGrade = s.grade && s.grade !== S.profile.grade;
+  let body;
+  if (mine) body = `<div class="notice"><b>참여를 완료했어요 ✓</b><p>응답은 한 번만 할 수 있어요.</p></div>`;
+  else if (d.closed) body = `<div class="notice"><b>마감된 설문이에요</b><p>${esc(s.deadline)}에 마감되었어요.</p></div>`;
+  else if (wrongGrade) body = `<div class="notice"><b>${s.grade}학년 대상 설문이에요</b><p>내 정보의 학년이 다르면 참여할 수 없어요.</p></div>`;
+  else body = `<form id="answerForm" novalidate>${s.questions.map(questionHtml).join('')}
+      <button class="btn primary full" type="submit">제출하기</button></form>`;
+
+  app.innerHTML = `
+    <a class="back" href="#/">← 목록으로</a>
+    <div class="box">
+      <div class="meta" style="margin:0 0 8px">
+        <span class="tag blue">${gradeLabel(s.grade)}</span>
+        <span class="tag">${s.deadline ? '마감 ' + esc(s.deadline) + ' (' + d.text + ')' : '마감일 없음'}</span>
+      </div>
+      <h1 style="margin-top:0">${esc(s.title)}</h1>
+      ${s.desc ? `<p class="sub" style="margin:0;white-space:pre-wrap">${esc(s.desc)}</p>` : ''}
+      <div class="row" style="margin-top:16px">
+        ${isOwner ? `<a class="btn soft" href="#/s/${esc(id)}/results">결과 보기</a>` : ''}
+        <button class="btn soft" id="qrBtn">QR 코드</button>
+        ${isOwner ? '<button class="btn danger" id="delBtn">삭제</button>' : ''}
+      </div>
+    </div>
+    ${body}`;
+
+  $('#qrBtn').onclick = () => showQR(s);
+  if (isOwner) $('#delBtn').onclick = async () => {
+    if (!confirm('이 설문을 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
+    try { await api.deleteSurvey(id); toast('삭제했어요.'); location.hash = '#/'; }
+    catch (e) { console.error(e); toast('삭제하지 못했어요.'); }
+  };
+
+  const form = $('#answerForm');
+  if (!form) return;
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const answers = [];
+    for (const [i, q] of s.questions.entries()) {
+      const name = 'q' + i;
+      let v;
+      if (q.type === 'multi') v = [...form.querySelectorAll(`input[name=${name}]:checked`)].map((x) => x.value);
+      else if (q.type === 'single') v = form.querySelector(`input[name=${name}]:checked`)?.value ?? '';
+      else if (q.type === 'scale') v = Number(form.querySelector(`input[name=${name}]:checked`)?.value || 0);
+      else v = form.querySelector(`[name=${name}]`).value.trim();
+      const empty = Array.isArray(v) ? !v.length : !v;
+      if (q.required && empty) {
+        toast(`${i + 1}번 질문에 답해주세요.`);
+        form.querySelectorAll('.q')[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      answers.push(v);
+    }
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    try {
+      await api.submitResponse(id, S.user.uid, { answers, grade: S.profile.grade, classNo: S.profile.classNo, gender: S.profile.gender });
+      toast('제출했어요. 참여해줘서 고마워요!');
+      renderSurvey(id);
+    } catch (err) { console.error(err); toast('제출하지 못했어요. 이미 참여했는지 확인해주세요.'); btn.disabled = false; }
+  };
+}
+function questionHtml(q, i) {
+  const name = 'q' + i;
+  let input;
+  if (q.type === 'single' || q.type === 'multi') {
+    const t = q.type === 'single' ? 'radio' : 'checkbox';
+    input = q.options.map((o) => `<label class="opt"><input type="${t}" name="${name}" value="${esc(o)}"><span>${esc(o)}</span></label>`).join('');
+  } else if (q.type === 'scale') {
+    input = `<div class="seg scale">${[1, 2, 3, 4, 5].map((n) => `<label><input type="radio" name="${name}" value="${n}"><span>${n}</span></label>`).join('')}</div>
+      <div class="scale-ends"><span>전혀 아니다</span><span>매우 그렇다</span></div>`;
+  } else if (q.type === 'short') input = `<input class="input" name="${name}" maxlength="100" placeholder="답변을 입력하세요">`;
+  else input = `<textarea class="input" name="${name}" maxlength="1000" placeholder="답변을 입력하세요"></textarea>`;
+  return `<div class="q"><div class="q-title"><span class="num">${i + 1}</span>${esc(q.title)}${q.required ? '<span class="req">*</span>' : ''}
+    ${q.type === 'multi' ? '<span class="tag" style="margin-left:6px">여러 개 선택</span>' : ''}</div>${input}</div>`;
+}
+
+/* ---------- 설문 만들기 ---------- */
+function renderBuilder() {
+  const draft = { title: '', desc: '', grade: 0, deadline: '', questions: [newQuestion()] };
+  app.innerHTML = `
+    <a class="back" href="#/">← 목록으로</a>
+    <h1>새 설문 만들기</h1>
+    <p class="sub">질문을 추가하고 선택지를 적으면 바로 설문이 만들어져요.</p>
+    <div class="box">
+      <label class="field"><span>설문 제목</span><input id="bTitle" maxlength="100" placeholder="예: 체육대회 종목 투표"></label>
+      <label class="field"><span>설명 (선택)</span><textarea id="bDesc" maxlength="500" placeholder="설문 목적이나 안내를 적어주세요"></textarea></label>
+      <div class="field"><span>대상 학년</span><div class="seg">
+        ${[0, 1, 2, 3].map((g) => `<label><input type="radio" name="bGrade" value="${g}" ${g === 0 ? 'checked' : ''}><span>${g ? g + '학년' : '전체'}</span></label>`).join('')}
+      </div></div>
+      <label class="field" style="margin:0"><span>마감일 (선택)</span><input id="bDeadline" type="date" min="${todayStr()}"></label>
+    </div>
+    <div id="qList"></div>
+    <button class="add-q" id="addQ">＋ 질문 추가</button>
+    <button class="btn primary full" id="publish">설문 올리기</button>`;
+
+  const qList = $('#qList');
+  const drawQs = () => {
+    qList.innerHTML = draft.questions.map((q, i) => `
+      <div class="qe" data-i="${i}">
+        <div class="qe-head">
+          <strong>질문 ${i + 1}</strong>
+          <select data-act="type" aria-label="질문 유형">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${q.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <button class="icon-btn" data-act="delq" aria-label="질문 삭제">삭제</button>
+        </div>
+        <input class="input" data-f="title" maxlength="200" placeholder="질문을 입력하세요" value="${esc(q.title)}" style="margin-bottom:10px">
+        ${hasOptions(q.type) ? q.options.map((o, j) => `
+          <div class="opt-edit">
+            <input class="input" data-o="${j}" maxlength="100" placeholder="선택지 ${j + 1}" value="${esc(o)}">
+            <button class="icon-btn" data-act="delopt" data-o="${j}" aria-label="선택지 삭제">✕</button>
+          </div>`).join('') + '<button class="add-opt" data-act="addopt">＋ 선택지 추가</button>' : ''}
+        ${q.type === 'scale' ? '<p class="sub" style="margin:0 0 8px">1점(전혀 아니다) ~ 5점(매우 그렇다)으로 답해요.</p>' : ''}
+        <label class="check" style="margin:4px 0 0"><input type="checkbox" data-f="required" ${q.required ? 'checked' : ''}> 필수 응답</label>
+      </div>`).join('');
+  };
+  drawQs();
+
+  // 글자 입력: 화면을 다시 그리지 않고 값만 저장 (입력 중 커서 유지)
+  qList.addEventListener('input', (e) => {
+    const box = e.target.closest('.qe'); if (!box) return;
+    const q = draft.questions[box.dataset.i];
+    if (e.target.dataset.f === 'title') q.title = e.target.value;
+    if (e.target.dataset.o !== undefined && e.target.tagName === 'INPUT') q.options[e.target.dataset.o] = e.target.value;
+  });
+  qList.addEventListener('change', (e) => {
+    const box = e.target.closest('.qe'); if (!box) return;
+    const q = draft.questions[box.dataset.i];
+    if (e.target.dataset.f === 'required') q.required = e.target.checked;
+    if (e.target.dataset.act === 'type') {
+      q.type = e.target.value;
+      if (hasOptions(q.type) && q.options.length < 2) q.options = ['', ''];
+      drawQs();
+    }
+  });
+  qList.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const i = Number(btn.closest('.qe').dataset.i); const q = draft.questions[i];
+    if (btn.dataset.act === 'delq') {
+      if (draft.questions.length === 1) return toast('질문은 최소 1개 있어야 해요.');
+      draft.questions.splice(i, 1);
+    }
+    if (btn.dataset.act === 'addopt') { if (q.options.length >= 20) return toast('선택지는 20개까지 만들 수 있어요.'); q.options.push(''); }
+    if (btn.dataset.act === 'delopt') {
+      if (q.options.length <= 2) return toast('선택지는 최소 2개 있어야 해요.');
+      q.options.splice(Number(btn.dataset.o), 1);
+    }
+    drawQs();
+  });
+  $('#addQ').onclick = () => {
+    if (draft.questions.length >= 30) return toast('질문은 30개까지 만들 수 있어요.');
+    draft.questions.push(newQuestion()); drawQs();
+    qList.lastElementChild.querySelector('[data-f=title]').focus();
+  };
+
+  $('#publish').onclick = async () => {
+    draft.title = $('#bTitle').value.trim();
+    draft.desc = $('#bDesc').value.trim();
+    draft.grade = Number(document.querySelector('input[name=bGrade]:checked').value);
+    draft.deadline = $('#bDeadline').value;
+    if (!draft.title) { $('#bTitle').focus(); return toast('설문 제목을 입력해주세요.'); }
+    for (const [i, q] of draft.questions.entries()) {
+      if (!q.title.trim()) return toast(`${i + 1}번 질문 내용을 입력해주세요.`);
+      if (hasOptions(q.type) && q.options.filter((o) => o.trim()).length < 2) return toast(`${i + 1}번 질문에 선택지를 2개 이상 적어주세요.`);
+    }
+    const questions = draft.questions.map((q) => ({
+      type: q.type, title: q.title.trim(), required: q.required,
+      options: hasOptions(q.type) ? [...new Set(q.options.map((o) => o.trim()).filter(Boolean))] : []
+    }));
+    const btn = $('#publish'); btn.disabled = true; btn.textContent = '올리는 중…';
+    try {
+      const id = await api.createSurvey({
+        title: draft.title, desc: draft.desc, grade: draft.grade, deadline: draft.deadline,
+        questions, ownerUid: S.user.uid, ownerGrade: S.profile.grade
+      });
+      toast('설문을 올렸어요!');
+      location.hash = '#/s/' + id;
+    } catch (e) { console.error(e); toast('올리지 못했어요. 다시 시도해주세요.'); btn.disabled = false; btn.textContent = '설문 올리기'; }
+  };
+}
+const newQuestion = () => ({ type: 'single', title: '', options: ['', ''], required: true });
+
+/* ---------- 결과 보기 (만든 사람만) ---------- */
+async function renderResults(id) {
+  app.innerHTML = '<div class="loading">결과를 모으는 중…</div>';
+  let s, all;
+  try {
+    s = await api.getSurvey(id);
+    if (!s || s.ownerUid !== S.user.uid) { app.innerHTML = '<div class="empty"><b>설문을 만든 사람만 결과를 볼 수 있어요</b><a href="#/">목록으로 돌아가기</a></div>'; return; }
+    all = await api.listResponses(id);
+  } catch (e) { console.error(e); app.innerHTML = '<div class="empty"><b>결과를 불러오지 못했어요</b><a href="#/">목록으로 돌아가기</a></div>'; return; }
+
+  const f = { grade: 0, gender: '' };
+  app.innerHTML = `
+    <a class="back" href="#/s/${esc(id)}">← 설문으로</a>
+    <h1>${esc(s.title)}</h1>
+    <p class="sub">응답 결과</p>
+    <div class="chips" id="gradeF">${[0, 1, 2, 3].map((g) => `<button data-v="${g}" aria-pressed="${g === 0}">${g ? g + '학년' : '전체 학년'}</button>`).join('')}</div>
+    <div class="chips" id="genderF" style="margin-top:-8px">${[['', '전체 성별'], ['M', '남'], ['F', '여']].map(([v, l]) => `<button data-v="${v}" aria-pressed="${v === ''}">${l}</button>`).join('')}</div>
+    <div id="res"></div>
+    <button class="btn soft full" id="csvBtn">엑셀(CSV)로 내려받기</button>`;
+
+  const draw = () => {
+    const rs = all.filter((r) => (!f.grade || r.grade === f.grade) && (!f.gender || r.gender === f.gender));
+    const n = rs.length;
+    let html = `<div class="box"><div class="big-num">${n}명</div><p class="sub" style="margin:6px 0 0">
+      ${[1, 2, 3].map((g) => `${g}학년 ${rs.filter((r) => r.grade === g).length}명`).join(', ')}</p></div>`;
+    s.questions.forEach((q, i) => {
+      const vals = rs.map((r) => r.answers?.[i]);
+      html += `<div class="q"><div class="q-title"><span class="num">${i + 1}</span>${esc(q.title)}</div>`;
+      if (hasOptions(q.type) || q.type === 'scale') {
+        const opts = q.type === 'scale' ? ['1', '2', '3', '4', '5'] : q.options;
+        const count = (o) => vals.filter((v) => (Array.isArray(v) ? v.includes(o) : String(v) === o)).length;
+        html += opts.map((o) => {
+          const c = count(o), pct = n ? Math.round((c / n) * 100) : 0;
+          return `<div class="bar-row"><div class="bar-label"><span>${q.type === 'scale' ? o + '점' : esc(o)}</span><span>${c}명 (${pct}%)</span></div>
+            <div class="bar"><i style="width:${pct}%"></i></div></div>`;
+        }).join('');
+        if (q.type === 'scale') {
+          const nums = vals.filter((v) => v > 0);
+          html += `<p class="sub" style="margin:8px 0 0">평균 ${nums.length ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1) : '-'}점</p>`;
+        }
+      } else {
+        const texts = vals.filter(Boolean);
+        html += texts.length ? `<div class="answers">${texts.map((t) => `<div>${esc(t)}</div>`).join('')}</div>` : '<p class="sub" style="margin:0">아직 답변이 없어요.</p>';
+      }
+      html += '</div>';
+    });
+    $('#res').innerHTML = html;
+  };
+  const bindChips = (el, key, num) => (el.onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    f[key] = num ? Number(b.dataset.v) : b.dataset.v;
+    el.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    draw();
+  });
+  bindChips($('#gradeF'), 'grade', true);
+  bindChips($('#genderF'), 'gender', false);
+  draw();
+
+  $('#csvBtn').onclick = () => {
+    const cell = (v) => `"${String(Array.isArray(v) ? v.join(', ') : v ?? '').replace(/"/g, '""')}"`;
+    const head = ['학년', '반', '성별', ...s.questions.map((q) => q.title)].map(cell).join(',');
+    const rows = all.map((r) => [r.grade, r.classNo, genderLabel(r.gender), ...s.questions.map((_, i) => r.answers?.[i])].map(cell).join(','));
+    const blob = new Blob(['\uFEFF' + [head, ...rows].join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `${s.title}_결과.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+}
+
+/* ---------- QR 코드 ---------- */
+function showQR(s) {
+  const url = location.origin + location.pathname + '#/s/' + s.id;
+  const m = $('#modal');
+  m.innerHTML = `<div class="modal-box" role="dialog" aria-label="설문 QR 코드">
+    <h2>${esc(s.title)}</h2>
+    <p class="sub" style="margin:0">스마트폰으로 찍으면 설문으로 바로 이동해요.</p>
+    <div id="qrBox"></div>
+    <div class="row"><button class="btn soft" id="qrSave">QR 저장</button><button class="btn soft" id="qrCopy">링크 복사</button></div>
+    <button class="btn ghost full" id="qrClose" style="margin-top:6px">닫기</button></div>`;
+  m.hidden = false;
+  if (window.QRCode) new QRCode($('#qrBox'), { text: url, width: 220, height: 220 });
+  else $('#qrBox').innerHTML = '<p class="sub">QR 코드를 불러오지 못했어요. 링크 복사를 이용해주세요.</p>';
+  $('#qrClose').onclick = () => (m.hidden = true);
+  m.onclick = (e) => { if (e.target === m) m.hidden = true; };
+  $('#qrSave').onclick = () => {
+    const c = $('#qrBox canvas'); if (!c) return;
+    const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `${s.title}_QR.png`; a.click();
+  };
+  $('#qrCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(url); toast('링크를 복사했어요.'); }
+    catch { prompt('아래 링크를 복사하세요', url); }
+  };
+}
+
+/* =================================================================
+   ④ 앱 설치 버튼 + 시작
+================================================================= */
+(function installSetup() {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  const btn = $('#installBtn');
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let ev = null;
+  if (installed) return;
+  if (isIOS) btn.hidden = false;
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); ev = e; btn.hidden = false; });
+  addEventListener('appinstalled', () => (btn.hidden = true));
+  btn.onclick = async () => {
+    if (ev) { ev.prompt(); await ev.userChoice; ev = null; btn.hidden = true; return; }
+    const m = $('#modal');
+    m.innerHTML = `<div class="modal-box" role="dialog" aria-label="아이폰 설치 방법" style="text-align:left">
+      <h2>아이폰에 설치하기</h2>
+      <p>1. 사파리 아래쪽의 공유 버튼(□↑)을 누르세요.<br>2. "홈 화면에 추가"를 누르세요.</p>
+      <button class="btn primary full" id="iosOk">확인</button></div>`;
+    m.hidden = false; $('#iosOk').onclick = () => (m.hidden = true);
+  };
+})();
+
+(async function start() {
+  try { api = DEMO ? demoApi() : await firebaseApi(); }
+  catch (e) { console.error(e); app.innerHTML = '<div class="empty"><b>서버에 연결하지 못했어요</b>인터넷 연결을 확인하고 새로고침해주세요.</div>'; return; }
+  api.onAuth(async (u) => {
+    S.user = u;
+    if (!u) { S.profile = null; updateHeader(); return renderLogin(); }
+    app.innerHTML = '<div class="loading">불러오는 중…</div>';
+    try { S.profile = await api.getProfile(u.uid); } catch (e) { console.error(e); S.profile = null; }
+    updateHeader();
+    if (!S.profile?.grade) return renderProfile(true);
+    route();
+  });
+  addEventListener('hashchange', () => { if (S.user && S.profile?.grade) route(); });
+})();
+</script>
+</body>
+</html>
